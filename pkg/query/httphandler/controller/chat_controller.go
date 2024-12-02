@@ -47,7 +47,7 @@ func (ctrl *ChatController) GetChats(c *gin.Context) {
 		return
 	}
 	if Chats == nil {
-		Chats = []query.Chat{}
+		Chats = []query.ChatReduced{}
 	}
 	c.JSON(http.StatusOK, Chats)
 

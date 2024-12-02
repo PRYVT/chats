@@ -24,8 +24,37 @@ func (repo *ChatRepository) GetChatById(ChatId uuid.UUID) (*models.Chat, error) 
 	return nil, nil
 }
 
-func (repo *ChatRepository) GetAllChats(limit, offset int) ([]models.Chat, error) {
-	return nil, nil
+func (repo *ChatRepository) GetAllChats(limit, offset int) ([]models.ChatReduced, error) {
+	stmt, err := repo.db.Prepare(`
+		SELECT id, name
+		FROM Chats
+		LIMIT ? OFFSET ?
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var chats []models.ChatReduced
+	for rows.Next() {
+		var chat models.ChatReduced
+		if err := rows.Scan(&chat.Id, &chat.Name); err != nil {
+			return nil, err
+		}
+		chats = append(chats, chat)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return chats, nil
 }
 
 func (repo *ChatRepository) AddOrReplaceChat(chat *models.Chat) error {

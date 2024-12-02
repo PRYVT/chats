@@ -41,8 +41,8 @@ func (h *HttpHandler) RegisterRoutes() {
 	h.router.GET("/ws", h.wsController.OnRequest)
 	h.router.Use(h.authMiddleware.AuthenticateMiddleware)
 	{
-		h.router.GET("Chats/:ChatId", h.ChatController.GetChat)
-		h.router.GET("Chats/", h.ChatController.GetChats)
+		h.router.GET("chats/:chatId", h.ChatController.GetChat)
+		h.router.GET("chats/", h.ChatController.GetChats)
 	}
 }
 
