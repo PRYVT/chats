@@ -41,8 +41,7 @@ func removeDisconnectedSockets(slice []interfaces.WebsocketConnecter) []interfac
 }
 
 func (eh *ChatEventHandler) HandleEvent(event models.Event) error {
-	log.Debug().Msg("Handling event")
-	if event.AggregateType == "Chat" {
+	if event.AggregateType == "chat" {
 		log.Debug().Msg("Handling Chat event")
 		ua, err := aggregates.NewChatAggregate(uuid.MustParse(event.AggregateId))
 		if err != nil {

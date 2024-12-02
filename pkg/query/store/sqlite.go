@@ -15,7 +15,7 @@ type DatabaseConnection struct {
 	db          *sql.DB
 }
 
-var _DBFILE = "./db_files/Chat_query.db"
+var _DBFILE = "./db_files/chat_query.db"
 
 func GetDbFileLocation() string {
 	return _DBFILE
@@ -50,10 +50,16 @@ func (d *DatabaseConnection) SetUp() {
 		log.Info().Err(err).Msg("Opening sqlite connection")
 		return
 	}
-	if createChatTable(db) != nil {
+	if createChatMessagesTable(db) != nil {
 		return
 	}
 	if createEventTable(db) != nil {
+		return
+	}
+	if createChatsTable(db) != nil {
+		return
+	}
+	if createUsersTable(db) != nil {
 		return
 	}
 	d.db = db
@@ -64,20 +70,22 @@ func (d *DatabaseConnection) IsInitialized() bool {
 	return d.initialized
 }
 
-func createChatTable(db *sql.DB) error {
+func createChatMessagesTable(db *sql.DB) error {
 	query := `
-	CREATE TABLE IF NOT EXISTS Chats (
+	CREATE TABLE IF NOT EXISTS ChatMessages (
 		id TEXT UNIQUE,
+		chat_id TEXT,
 		user_id TEXT,
 		text TEXT,
 		image_base64 TEXT,
-		change_date TEXT,
-		"order" INTEGER PRIMARY KEY
+		creation_date TEXT,
+		"order" INTEGER PRIMARY KEY,
+		FOREIGN KEY (chat_id) REFERENCES Chats(id)
 	);`
 
 	_, err := db.Exec(query)
 	if err != nil {
-		log.Printf("Error creating Chats table: %v", err)
+		log.Printf("Error creating ChatMessages table: %v", err)
 		return err
 	}
 
@@ -93,6 +101,40 @@ func createEventTable(db *sql.DB) error {
 	_, err := db.Exec(query)
 	if err != nil {
 		log.Printf("Error creating events table: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func createChatsTable(db *sql.DB) error {
+	query := `
+	CREATE TABLE IF NOT EXISTS Chats (
+		id TEXT PRIMARY KEY,
+		name TEXT NOT NULL,
+		creation_date TEXT NOT NULL
+	);`
+
+	_, err := db.Exec(query)
+	if err != nil {
+		log.Printf("Error creating Chats table: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func createUsersTable(db *sql.DB) error {
+	query := `
+	CREATE TABLE IF NOT EXISTS Users (
+		user_id TEXT,
+		chat_id TEXT,
+		FOREIGN KEY (chat_id) REFERENCES Chats(id)
+	);`
+
+	_, err := db.Exec(query)
+	if err != nil {
+		log.Printf("Error creating Users table: %v", err)
 		return err
 	}
 

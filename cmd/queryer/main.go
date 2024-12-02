@@ -36,13 +36,13 @@ func main() {
 	}
 	eventRepo := utilsRepo.NewEventRepository(conn)
 	userRepo := repository.NewUserRepository(conn)
-	ChatEventHandler := eventhandling.NewChatEventHandler(userRepo)
-	uc := controller.NewChatController(userRepo, ChatEventHandler)
+	chatEventHandler := eventhandling.NewChatEventHandler(userRepo)
+	uc := controller.NewChatController(userRepo, chatEventHandler)
 	aut := auth.NewAuthMiddleware()
-	wsH := websocket.NewWsController(ChatEventHandler)
+	wsH := websocket.NewWsController(chatEventHandler)
 	h := httphandler.NewHttpHandler(uc, aut, wsH)
 
-	eventPolling := eventpolling.NewEventPolling(c, eventRepo, ChatEventHandler)
+	eventPolling := eventpolling.NewEventPolling(c, eventRepo, chatEventHandler)
 
 	tcpC, err := tcpClient.NewTcpEventClient()
 	if err != nil {
