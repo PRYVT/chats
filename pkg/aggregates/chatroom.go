@@ -9,21 +9,15 @@ import (
 	"github.com/L4B0MB4/EVTSRC/pkg/models"
 	"github.com/PRYVT/chats/pkg/events"
 	"github.com/PRYVT/chats/pkg/models/command"
+	"github.com/PRYVT/chats/pkg/models/common"
 	"github.com/google/uuid"
 )
-
-type ChatMessage struct {
-	Text         string
-	ImageBase64  string
-	UserId       uuid.UUID
-	CreationDate time.Time
-}
 
 type ChatRoomAggregate struct {
 	UserIds       []uuid.UUID
 	Name          string
 	ChangeDate    time.Time
-	Messages      []ChatMessage
+	Messages      []common.ChatMessage
 	Events        []models.ChangeTrackedEvent
 	aggregateType string
 	AggregateId   uuid.UUID
@@ -69,7 +63,8 @@ func (pa *ChatRoomAggregate) apply_ChatCreatedEvent(e *events.ChatCreatedEvent) 
 }
 
 func (pa *ChatRoomAggregate) apply_ChatMessageAddedEvent(e *events.ChatMessageAddedEvent) {
-	pa.Messages = append(pa.Messages, ChatMessage{
+	pa.Messages = append(pa.Messages, common.ChatMessage{
+		Id:           e.Id,
 		Text:         e.Text,
 		ImageBase64:  e.ImageBase64,
 		UserId:       e.UserId,
@@ -133,6 +128,10 @@ func (ua *ChatRoomAggregate) AddChatMessage(chatMessage command.AddChatMessage, 
 	}
 	if chatMessage.Text == "" && chatMessage.ImageBase64 == "" {
 		return fmt.Errorf("neither text nor image is provided")
+	}
+
+	if userId == uuid.Nil {
+		return fmt.Errorf("user id is empty")
 	}
 
 	containsUser := slices.ContainsFunc[[]uuid.UUID](ua.UserIds, func(x uuid.UUID) bool {

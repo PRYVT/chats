@@ -112,7 +112,7 @@ func createChatsTable(db *sql.DB) error {
 	CREATE TABLE IF NOT EXISTS Chats (
 		id TEXT PRIMARY KEY,
 		name TEXT NOT NULL,
-		creation_date TEXT NOT NULL
+		change_date TEXT NOT NULL
 	);`
 
 	_, err := db.Exec(query)
@@ -129,7 +129,8 @@ func createUsersTable(db *sql.DB) error {
 	CREATE TABLE IF NOT EXISTS Users (
 		user_id TEXT,
 		chat_id TEXT,
-		FOREIGN KEY (chat_id) REFERENCES Chats(id)
+		FOREIGN KEY (chat_id) REFERENCES Chats(id),
+		UNIQUE(user_id, chat_id)
 	);`
 
 	_, err := db.Exec(query)

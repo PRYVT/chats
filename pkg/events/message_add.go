@@ -9,6 +9,7 @@ import (
 )
 
 type ChatMessageAddedEvent struct {
+	Id           uuid.UUID
 	Text         string
 	ImageBase64  string
 	UserId       uuid.UUID
@@ -17,6 +18,7 @@ type ChatMessageAddedEvent struct {
 
 func NewChatMessageAddedEvent(chatMessage m.AddChatMessage, userId uuid.UUID) *models.ChangeTrackedEvent {
 	b := UnsafeSerializeAny(ChatMessageAddedEvent{
+		Id:           uuid.New(),
 		Text:         chatMessage.Text,
 		ImageBase64:  chatMessage.ImageBase64,
 		UserId:       userId,
