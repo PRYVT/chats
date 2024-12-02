@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/PRYVT/chats/pkg/models/common"
 	models "github.com/PRYVT/chats/pkg/models/query"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 )
 
 type ChatRepository struct {
@@ -19,9 +21,93 @@ func NewUserRepository(db *sql.DB) *ChatRepository {
 	return &ChatRepository{db: db}
 }
 
-func (repo *ChatRepository) GetChatById(ChatId uuid.UUID) (*models.Chat, error) {
+func (repo *ChatRepository) GetChatById(chatId uuid.UUID) (*models.Chat, error) {
+	var chat models.Chat
 
-	return nil, nil
+	stmt, err := repo.db.Prepare(`
+		SELECT id, name, change_date
+		FROM Chats
+		WHERE id = ?
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+	var changeDate string
+	err = stmt.QueryRow(chatId.String()).Scan(&chat.Id, &chat.Name, &changeDate)
+	if err != nil {
+		return nil, err
+	}
+
+	changeDateT, err := time.Parse(time.RFC3339, changeDate)
+	if err != nil {
+		log.Warn().Err(err).Msgf("Error while parsing creation date of chat %v", chatId.String())
+	}
+	chat.ChangeDate = changeDateT
+
+	msgStmt, err := repo.db.Prepare(`
+		SELECT id, user_id, text, image_base64, creation_date
+		FROM ChatMessages
+		WHERE chat_id = ?
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer msgStmt.Close()
+
+	rows, err := msgStmt.Query(chatId.String())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var message common.ChatMessage
+		var creationDate string
+		if err := rows.Scan(&message.Id, &message.UserId, &message.Text, &message.ImageBase64, &creationDate); err != nil {
+			return nil, err
+		}
+		creationDateT, err := time.Parse(time.RFC3339, creationDate)
+		if err != nil {
+			log.Warn().Err(err).Msgf("Error while parsing creation date of message %v", message.Id.String())
+		}
+		message.CreationDate = creationDateT
+		chat.Messages = append(chat.Messages, message)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	userStmt, err := repo.db.Prepare(`
+		SELECT user_id
+		FROM Users
+		WHERE chat_id = ?
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer userStmt.Close()
+
+	userRows, err := userStmt.Query(chatId.String())
+	if err != nil {
+		return nil, err
+	}
+	defer userRows.Close()
+
+	for userRows.Next() {
+		var userId uuid.UUID
+		if err := userRows.Scan(&userId); err != nil {
+			return nil, err
+		}
+		chat.UserIds = append(chat.UserIds, userId)
+	}
+
+	if err := userRows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &chat, nil
 }
 
 func (repo *ChatRepository) GetAllChats(limit, offset int) ([]models.ChatReduced, error) {
