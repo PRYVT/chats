@@ -110,10 +110,11 @@ func (repo *ChatRepository) GetChatById(chatId uuid.UUID) (*models.Chat, error) 
 	return &chat, nil
 }
 
-func (repo *ChatRepository) GetAllChats(limit, offset int) ([]models.ChatReduced, error) {
+func (repo *ChatRepository) GetAllChats(limit, offset int, userId uuid.UUID) ([]models.ChatReduced, error) {
 	stmt, err := repo.db.Prepare(`
 		SELECT id, name
 		FROM Chats
+		WHERE id IN (SELECT chat_id FROM Users WHERE user_id = ?)
 		LIMIT ? OFFSET ?
 	`)
 	if err != nil {
@@ -121,7 +122,7 @@ func (repo *ChatRepository) GetAllChats(limit, offset int) ([]models.ChatReduced
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(limit, offset)
+	rows, err := stmt.Query(limit, offset, userId.String())
 	if err != nil {
 		return nil, err
 	}
