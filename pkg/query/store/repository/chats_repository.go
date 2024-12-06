@@ -122,7 +122,7 @@ func (repo *ChatRepository) GetAllChats(limit, offset int, userId uuid.UUID) ([]
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(limit, offset, userId.String())
+	rows, err := stmt.Query(userId.String(), limit, offset)
 	if err != nil {
 		return nil, err
 	}
