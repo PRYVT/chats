@@ -110,10 +110,11 @@ func (repo *ChatRepository) GetChatById(chatId uuid.UUID) (*models.Chat, error) 
 	return &chat, nil
 }
 
-func (repo *ChatRepository) GetAllChats(limit, offset int) ([]models.ChatReduced, error) {
+func (repo *ChatRepository) GetAllChats(limit, offset int, userId uuid.UUID) ([]models.ChatReduced, error) {
 	stmt, err := repo.db.Prepare(`
 		SELECT id, name
 		FROM Chats
+		WHERE id IN (SELECT chat_id FROM Users WHERE user_id = ?)
 		LIMIT ? OFFSET ?
 	`)
 	if err != nil {
@@ -121,7 +122,7 @@ func (repo *ChatRepository) GetAllChats(limit, offset int) ([]models.ChatReduced
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(limit, offset)
+	rows, err := stmt.Query(userId.String(), limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -133,6 +134,35 @@ func (repo *ChatRepository) GetAllChats(limit, offset int) ([]models.ChatReduced
 		if err := rows.Scan(&chat.Id, &chat.Name); err != nil {
 			return nil, err
 		}
+
+		userStmt, err := repo.db.Prepare(`
+			SELECT user_id
+			FROM Users
+			WHERE chat_id = ?
+		`)
+		if err != nil {
+			return nil, err
+		}
+		defer userStmt.Close()
+
+		userRows, err := userStmt.Query(chat.Id.String())
+		if err != nil {
+			return nil, err
+		}
+		defer userRows.Close()
+
+		for userRows.Next() {
+			var userId uuid.UUID
+			if err := userRows.Scan(&userId); err != nil {
+				return nil, err
+			}
+			chat.UserIds = append(chat.UserIds, userId)
+		}
+
+		if err := userRows.Err(); err != nil {
+			return nil, err
+		}
+
 		chats = append(chats, chat)
 	}
 
