@@ -43,6 +43,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           file: "./docker/command/Dockerfile"
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ vars.DOCKERHUB_USERNAME }}/pryvt_chats_command:${{ github.ref == 'refs/heads/master' && 'latest' || github.ref_name }}
       - name: Build without push
@@ -69,6 +70,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           file: "./docker/query/Dockerfile"
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ vars.DOCKERHUB_USERNAME }}/pryvt_chats_query:${{ github.ref == 'refs/heads/master' && 'latest' || github.ref_name }}
       - name: Build without push
